@@ -13,7 +13,7 @@ class StudentProfile(Base):
         nullable=False,
     )
     phone: Mapped[str | None] = mapped_column( String(30), nullable=True)
-    education : Mapped[str | None] = mapped_column( String(255), nullable=False)
+    education : Mapped[str | None] = mapped_column( String(255), nullable=True)
     bio: Mapped[str | None] = mapped_column(Text, nullable=True)
     user = relationship("User", back_populates="student_profile")
     sessions = relationship(

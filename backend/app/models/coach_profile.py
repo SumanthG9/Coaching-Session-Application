@@ -26,7 +26,7 @@ class CoachProfile(Base):
     )
     bio: Mapped[str | None] = mapped_column(
         Text,
-        nullable=False,
+        nullable=True,
     )
     years_experience: Mapped[int] = mapped_column(
         nullable=False,
