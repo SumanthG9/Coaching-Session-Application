@@ -1,6 +1,6 @@
 from datetime import date, time, datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class SessionCreate(BaseModel):
@@ -10,6 +10,13 @@ class SessionCreate(BaseModel):
     duration_minutes: int = Field(gt=0)
     topic: str = Field(min_length=2, max_length=255)
     student_message: str | None = None
+
+    @field_validator("session_date")
+    @classmethod
+    def validate_session_date(cls, value: date) -> date:
+        if value < date.today():
+            raise ValueError("Session date cannot be in the past")
+        return value
 
 
 class SessionResponse(BaseModel):
