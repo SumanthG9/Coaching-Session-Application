@@ -1,6 +1,11 @@
 from fastapi import FastAPI
 from sqlalchemy import text
 from app.auth.router import router as auth_router
+from app.students.router import router as student_router
+from app.coaches.router import router as coach_router
+from app.coaches.skills.router import router as coach_skills_router
+from app.coaches.search_router import router as coach_search_router
+from app.sessions.router import router as sessions_router
 from app.database.database import engine     
 
 app = FastAPI( title="Coaching Management System API",
@@ -8,6 +13,11 @@ app = FastAPI( title="Coaching Management System API",
 )
 
 app.include_router(auth_router)
+app.include_router(student_router)
+app.include_router(coach_router)
+app.include_router(coach_skills_router)
+app.include_router(coach_search_router)
+app.include_router(sessions_router)
 
 @app.get("/")
 def root():
@@ -25,3 +35,6 @@ def database_health_check():
         "status" : "Ok",
         "database": "connected",
     }
+
+
+
