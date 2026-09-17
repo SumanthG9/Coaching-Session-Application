@@ -91,3 +91,15 @@ class CoachingSession(Base):
         foreign_keys=[coach_id] 
     )
 
+    @property
+    def student_name(self) -> str | None:
+        if self.student and self.student.user:
+            return self.student.user.name
+        return None
+
+    @property
+    def coach_name(self) -> str | None:
+        if self.coach and self.coach.user:
+            return self.coach.user.name
+        return None
+

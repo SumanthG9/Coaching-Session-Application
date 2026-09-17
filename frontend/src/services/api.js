@@ -1,0 +1,56 @@
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  `http://${window.location.hostname}:8000`;
+
+async function apiRequest(endpoint, options = {}) {
+  const { headers, ...restOptions } = options;
+
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...restOptions,
+    headers: {
+      'Content-Type': 'application/json',
+      ...headers,
+    },
+  });
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  let data = null;
+  const contentType = response.headers.get('content-type');
+  if (contentType && contentType.includes('application/json')) {
+    data = await response.json();
+  } else {
+    data = await response.text();
+  }
+
+  if (!response.ok) {
+    let errorMessage = 'Something went wrong';
+    if (data && typeof data === 'object') {
+      if (Array.isArray(data.detail)) {
+        errorMessage = data.detail.map((err) => (typeof err === 'object' && err.msg ? err.msg : JSON.stringify(err))).join(', ');
+      } else if (typeof data.detail === 'string') {
+        errorMessage = data.detail;
+      }
+    } else if (typeof data === 'string' && data.trim()) {
+      errorMessage = data;
+    }
+    throw new Error(errorMessage);
+  }
+
+  return data;
+}
+
+async function apiRequestWithToken(endpoint, token, options = {}) {
+  const { headers, ...restOptions } = options;
+  return apiRequest(endpoint, {
+    ...restOptions,
+    headers: {
+      ...headers,
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export { apiRequest, apiRequestWithToken, API_BASE_URL };

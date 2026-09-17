@@ -23,6 +23,8 @@ class SessionResponse(BaseModel):
     id: int
     student_id: int
     coach_id: int
+    student_name: str | None = None
+    coach_name: str | None = None
     session_date: date
     start_time: time
     duration_minutes: int
