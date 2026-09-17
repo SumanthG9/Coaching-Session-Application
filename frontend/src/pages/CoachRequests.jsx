@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import StatusBadge from '../components/StatusBadge';
 import Modal from '../components/Modal';
@@ -20,6 +21,7 @@ import {
   MessageSquare,
   Check,
   X,
+  ArrowRight,
 } from 'lucide-react';
 
 function CoachRequests() {
@@ -277,14 +279,22 @@ function CoachRequests() {
                     </div>
 
                     {/* Actions */}
-                    <div className="sm:text-right shrink-0 pt-2 sm:pt-0">
+                    <div className="flex sm:flex-col items-center sm:items-end gap-2 shrink-0 pt-2 sm:pt-0">
+                      <Link
+                        to={`/coach/sessions/${session.id}`}
+                        className="px-3.5 py-2 rounded-xl text-xs font-semibold text-purple-600 bg-purple-50 hover:bg-purple-100 border border-purple-200/70 transition-colors inline-flex items-center gap-1.5"
+                      >
+                        <span>View Details</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+
                       {isPending && (
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
                             disabled={isActionLoading}
                             onClick={() => handleReject(session)}
-                            className="px-3.5 py-2 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/70 transition-colors flex items-center gap-1 disabled:opacity-50"
+                            className="px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/70 transition-colors flex items-center gap-1 disabled:opacity-50"
                           >
                             <X className="w-3.5 h-3.5" />
                             <span>Decline</span>
@@ -293,10 +303,10 @@ function CoachRequests() {
                             type="button"
                             disabled={isActionLoading}
                             onClick={() => handleAccept(session)}
-                            className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs shadow-emerald-600/20 transition-all flex items-center gap-1.5 disabled:opacity-50"
+                            className="px-3.5 py-2 rounded-xl text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-xs shadow-emerald-600/20 transition-all flex items-center gap-1.5 disabled:opacity-50"
                           >
                             <Check className="w-3.5 h-3.5" />
-                            <span>{isActionLoading ? 'Accepting...' : 'Accept Session'}</span>
+                            <span>{isActionLoading ? 'Accepting...' : 'Accept'}</span>
                           </button>
                         </div>
                       )}

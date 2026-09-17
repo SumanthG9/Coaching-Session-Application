@@ -324,7 +324,7 @@ function CoachDashboard() {
                   </div>
 
                   <Link
-                    to="/coach/requests"
+                    to={`/coach/sessions/${session.id}`}
                     className="self-start sm:self-auto px-3.5 py-2 text-xs font-semibold text-purple-600 hover:bg-purple-50 rounded-xl transition-colors"
                   >
                     View Details &rarr;

@@ -217,10 +217,10 @@ function StudentDashboard() {
                   </div>
 
                   <Link
-                    to="/student/sessions"
+                    to={`/student/sessions/${session.id}`}
                     className="self-start sm:self-auto px-3.5 py-2 text-xs font-semibold text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors"
                   >
-                    Manage &rarr;
+                    View Details &rarr;
                   </Link>
                 </div>
               ))}

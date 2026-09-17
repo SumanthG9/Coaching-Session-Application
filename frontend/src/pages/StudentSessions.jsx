@@ -245,9 +245,17 @@ function StudentSessions() {
                       )}
                     </div>
 
-                    {/* Pending Actions */}
-                    {isPending && (
-                      <div className="sm:text-right shrink-0 pt-2 sm:pt-0">
+                    {/* Actions */}
+                    <div className="flex sm:flex-col items-center sm:items-end gap-2.5 shrink-0 pt-2 sm:pt-0">
+                      <Link
+                        to={`/student/sessions/${session.id}`}
+                        className="px-3.5 py-2 rounded-xl text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200/70 transition-colors inline-flex items-center gap-1.5"
+                      >
+                        <span>View Details</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
+
+                      {isPending && (
                         <button
                           type="button"
                           onClick={() => setSessionToCancel(session)}
@@ -255,8 +263,8 @@ function StudentSessions() {
                         >
                           Cancel Request
                         </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               );

@@ -8,6 +8,7 @@ from app.models.user import User
 from app.schemas.coach import (
     CoachProfileResponse,
     CoachProfileUpdate,
+    CoachAvailabilityUpdate,
 )
 
 router = APIRouter(
@@ -57,3 +58,28 @@ def update_my_profile(
     db.refresh(profile)
 
     return profile
+
+
+@router.put("/me/availability", response_model=CoachProfileResponse)
+def update_my_availability(
+    availability_data: CoachAvailabilityUpdate,
+    current_user: User = Depends(require_coach),
+    db: Session = Depends(get_db),
+):
+    profile = (
+        db.query(CoachProfile).filter(CoachProfile.user_id == current_user.id).first()
+    )
+
+    if profile is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Coach Profile Not Found",
+        )
+
+    profile.availability = availability_data.availability
+
+    db.commit()
+    db.refresh(profile)
+
+    return profile
+

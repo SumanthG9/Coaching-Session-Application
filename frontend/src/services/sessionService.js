@@ -33,6 +33,10 @@ async function rejectSession(token, sessionId) {
   });
 }
 
+async function getSessionById(token, sessionId) {
+  return apiRequestWithToken(`/sessions/${sessionId}`, token);
+}
+
 async function completeSession(token, sessionId, coachRemarks) {
   return apiRequestWithToken(`/sessions/${sessionId}/complete`, token, {
     method: 'PUT',
@@ -43,9 +47,11 @@ async function completeSession(token, sessionId, coachRemarks) {
 export {
   createSession,
   getMyStudentSessions,
+  getSessionById,
   cancelSession,
   getCoachSessionRequests,
   acceptSession,
   rejectSession,
   completeSession,
 };
+

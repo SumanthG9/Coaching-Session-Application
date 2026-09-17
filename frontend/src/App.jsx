@@ -15,6 +15,8 @@ import CoachDashboard from "./pages/CoachDashboard";
 import CoachRequests from "./pages/CoachRequests";
 import CoachProfile from "./pages/CoachProfile";
 
+import SessionDetails from "./pages/SessionDetails";
+
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -53,6 +55,14 @@ function App() {
           }
         />
         <Route
+          path="/student/sessions/:id"
+          element={
+            <ProtectedRoute allowedRole="student">
+              <SessionDetails />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/student/profile"
           element={
             <ProtectedRoute allowedRole="student">
@@ -79,10 +89,28 @@ function App() {
           }
         />
         <Route
+          path="/coach/sessions/:id"
+          element={
+            <ProtectedRoute allowedRole="coach">
+              <SessionDetails />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/coach/profile"
           element={
             <ProtectedRoute allowedRole="coach">
               <CoachProfile />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* General Protected Session Route */}
+        <Route
+          path="/sessions/:id"
+          element={
+            <ProtectedRoute>
+              <SessionDetails />
             </ProtectedRoute>
           }
         />

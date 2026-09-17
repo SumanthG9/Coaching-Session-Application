@@ -2,18 +2,18 @@ from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.auth.dependencies import require_coach
-from app.auth.dependencies import require_student
+from app.auth.dependencies import get_current_user, require_coach, require_student
 from app.database.database import get_db
 from app.models.coach_profile import CoachProfile
 from app.models.coaching_session import CoachingSession, SessionStatus
 from app.models.student_profile import StudentProfile
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.schemas.session import (
     SessionCreate,
     SessionComplete,
     SessionResponse,
 )
+from app.sessions.availability import is_time_within_availability
 
 
 router = APIRouter(
@@ -44,9 +44,11 @@ def create_session(
             detail="Student profile not found",
         )
 
+    # Pessimistic row-level lock on CoachProfile for race-safe booking
     coach_profile = (
         db.query(CoachProfile)
         .filter(CoachProfile.id == session_data.coach_id)
+        .with_for_update()
         .first()
     )
 
@@ -56,8 +58,22 @@ def create_session(
             detail="Coach not found",
         )
 
+    # Check coach availability schedule
+    is_avail, avail_error = is_time_within_availability(
+        coach_profile.availability,
+        session_data.session_date,
+        session_data.start_time,
+        session_data.duration_minutes,
+    )
+    if not is_avail:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=avail_error,
+        )
+
     session_end = (
         datetime.combine(
+
             session_data.session_date,
             session_data.start_time,
         )
@@ -197,6 +213,7 @@ def accept_session(
     coach_profile = (
         db.query(CoachProfile)
         .filter(CoachProfile.user_id == current_user.id)
+        .with_for_update()
         .first()
     )
 
@@ -226,6 +243,30 @@ def accept_session(
             status_code=status.HTTP_409_CONFLICT,
             detail="Only pending sessions can be accepted",
         )
+
+    # Validate that this session does not conflict with any already accepted session
+    session_start = datetime.combine(session.session_date, session.start_time)
+    session_end = session_start + timedelta(minutes=session.duration_minutes)
+
+    accepted_sessions = (
+        db.query(CoachingSession)
+        .filter(
+            CoachingSession.coach_id == coach_profile.id,
+            CoachingSession.session_date == session.session_date,
+            CoachingSession.status == SessionStatus.ACCEPTED,
+            CoachingSession.id != session.id,
+        )
+        .all()
+    )
+
+    for accepted in accepted_sessions:
+        acc_start = datetime.combine(accepted.session_date, accepted.start_time)
+        acc_end = acc_start + timedelta(minutes=accepted.duration_minutes)
+        if session_start < acc_end and session_end > acc_start:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Cannot accept session: conflicts with another already accepted session",
+            )
 
     session.status = SessionStatus.ACCEPTED
 
@@ -382,3 +423,51 @@ def complete_session(
     db.refresh(session)
 
     return session
+
+
+@router.get(
+    "/{session_id}",
+    response_model=SessionResponse,
+)
+def get_session_details(
+    session_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    session = (
+        db.query(CoachingSession)
+        .filter(CoachingSession.id == session_id)
+        .first()
+    )
+
+    if session is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found",
+        )
+
+    is_authorized = False
+    if current_user.role == UserRole.STUDENT:
+        student_profile = (
+            db.query(StudentProfile)
+            .filter(StudentProfile.user_id == current_user.id)
+            .first()
+        )
+        if student_profile and session.student_id == student_profile.id:
+            is_authorized = True
+    elif current_user.role == UserRole.COACH:
+        coach_profile = (
+            db.query(CoachProfile)
+            .filter(CoachProfile.user_id == current_user.id)
+            .first()
+        )
+        if coach_profile and session.coach_id == coach_profile.id:
+            is_authorized = True
+
+    if not is_authorized:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to view this session",
+        )
+
+    return session

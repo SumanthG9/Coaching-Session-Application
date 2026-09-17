@@ -8,6 +8,10 @@ class CoachProfileUpdate(BaseModel):
     session_fee: Decimal = Field(default=0,ge=0)
     availability : str | None = None
 
+class CoachAvailabilityUpdate(BaseModel):
+    availability: str | None = None
+
+
 class CoachProfileResponse(BaseModel):
     id: int
     user_id : int
