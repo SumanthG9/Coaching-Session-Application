@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  Sparkles,
   LayoutDashboard,
   Users,
   CalendarDays,
@@ -40,25 +39,28 @@ function Navbar() {
   ];
 
   const navLinks = isStudent ? studentLinks : isCoach ? coachLinks : [];
+  const homePath = user ? (isStudent ? '/student/dashboard' : '/coach/dashboard') : '/';
 
   return (
     <header className="sticky top-0 z-40 w-full glass-panel border-b border-slate-200/80 bg-white/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
-              <Sparkles className="w-5 h-5" />
-            </div>
+          {/* Clickable Brand Logo */}
+          <Link to={homePath} className="flex items-center gap-3 group focus:outline-none">
+            <img 
+              src="/favicon.svg" 
+              alt="Student-Coach Management Logo" 
+              className="w-10 h-10 rounded-xl shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-200" 
+            />
             <div>
-              <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-                CoachFlow
+              <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-slate-900 to-indigo-900 bg-clip-text text-transparent group-hover:text-indigo-600 transition-colors">
+                Student-Coach Management
               </span>
-              <span className="hidden sm:inline-block ml-2 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-500 border border-slate-200">
+              <span className="hidden sm:inline-block ml-2 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100">
                 {user?.role || 'Portal'}
               </span>
             </div>
-          </div>
+          </Link>
 
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-1">

@@ -47,7 +47,7 @@ body {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
 }
 
-/* 21st.dev style subtle card glow */
+/* Elevated card hover elevation */
 .card-glow {
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }

@@ -1,6 +1,5 @@
 
-from concurrent.futures._base import PENDING
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 from enum import Enum
 
 from sqlalchemy import CheckConstraint, Date, DateTime, Enum as SQLEnum, ForeignKey, Integer
@@ -71,13 +70,13 @@ class CoachingSession(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
     student = relationship(

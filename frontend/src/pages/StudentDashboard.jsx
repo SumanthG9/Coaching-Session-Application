@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import StatusBadge from '../components/StatusBadge';
+import StatCard from '../components/StatCard';
 import { getMyStudentSessions } from '../services/sessionService';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -12,9 +13,9 @@ import {
   ArrowRight,
   Search,
   BookOpen,
-  User,
-  AlertCircle,
   TrendingUp,
+  AlertCircle,
+  X,
 } from 'lucide-react';
 
 function StudentDashboard() {
@@ -91,63 +92,49 @@ function StudentDashboard() {
           <div className="absolute -right-16 -bottom-16 w-80 h-80 rounded-full bg-white/10 blur-2xl pointer-events-none" />
         </div>
 
+        {/* Error Alert */}
+        {error && (
+          <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-between text-rose-700 text-sm">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+            <button onClick={() => setError('')} className="p-1 hover:bg-rose-100 rounded-md">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         {/* 4 Metric / Stat Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-          {/* Total */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-slate-500">Total Booked</span>
-              <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
-                <BookOpen className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <span className="text-2xl sm:text-3xl font-extrabold text-slate-900">{totalCount}</span>
-              <p className="text-[11px] text-slate-400 mt-0.5">All time requested</p>
-            </div>
-          </div>
-
-          {/* Pending */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-amber-700">Pending Review</span>
-              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <Clock className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <span className="text-2xl sm:text-3xl font-extrabold text-slate-900">{pendingCount}</span>
-              <p className="text-[11px] text-slate-400 mt-0.5">Awaiting coach acceptance</p>
-            </div>
-          </div>
-
-          {/* Accepted */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-emerald-700">Confirmed / Active</span>
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <CheckCircle2 className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <span className="text-2xl sm:text-3xl font-extrabold text-slate-900">{acceptedCount}</span>
-              <p className="text-[11px] text-slate-400 mt-0.5">Upcoming accepted sessions</p>
-            </div>
-          </div>
-
-          {/* Completed */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-indigo-700">Completed</span>
-              <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-                <TrendingUp className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <span className="text-2xl sm:text-3xl font-extrabold text-slate-900">{completedCount}</span>
-              <p className="text-[11px] text-slate-400 mt-0.5">Finished mentorship calls</p>
-            </div>
-          </div>
+          <StatCard
+            label="Total Booked"
+            value={totalCount}
+            icon={BookOpen}
+            description="All time requested"
+            color="slate"
+          />
+          <StatCard
+            label="Pending Review"
+            value={pendingCount}
+            icon={Clock}
+            description="Awaiting coach acceptance"
+            color="amber"
+          />
+          <StatCard
+            label="Confirmed / Active"
+            value={acceptedCount}
+            icon={CheckCircle2}
+            description="Upcoming accepted sessions"
+            color="emerald"
+          />
+          <StatCard
+            label="Completed"
+            value={completedCount}
+            icon={TrendingUp}
+            description="Finished mentorship calls"
+            color="indigo"
+          />
         </div>
 
         {/* Upcoming Sessions Widget */}

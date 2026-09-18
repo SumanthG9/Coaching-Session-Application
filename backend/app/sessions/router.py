@@ -22,6 +22,53 @@ router = APIRouter(
 )
 
 
+def _get_student_profile(db: Session, user_id: int) -> StudentProfile:
+    student_profile = (
+        db.query(StudentProfile)
+        .filter(StudentProfile.user_id == user_id)
+        .first()
+    )
+    if student_profile is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Student profile not found",
+        )
+    return student_profile
+
+
+def _get_coach_profile(db: Session, user_id: int, lock: bool = False) -> CoachProfile:
+    query = db.query(CoachProfile).filter(CoachProfile.user_id == user_id)
+    if lock:
+        query = query.with_for_update()
+    coach_profile = query.first()
+    if coach_profile is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Coach profile not found",
+        )
+    return coach_profile
+
+
+def _get_owned_session(
+    db: Session,
+    session_id: int,
+    coach_id: int | None = None,
+    student_id: int | None = None,
+) -> CoachingSession:
+    query = db.query(CoachingSession).filter(CoachingSession.id == session_id)
+    if coach_id is not None:
+        query = query.filter(CoachingSession.coach_id == coach_id)
+    if student_id is not None:
+        query = query.filter(CoachingSession.student_id == student_id)
+    session = query.first()
+    if session is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found",
+        )
+    return session
+
+
 @router.post(
     "",
     response_model=SessionResponse,
@@ -32,17 +79,7 @@ def create_session(
     current_user: User = Depends(require_student),
     db: Session = Depends(get_db),
 ):
-    student_profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.user_id == current_user.id)
-        .first()
-    )
-
-    if student_profile is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student profile not found",
-        )
+    student_profile = _get_student_profile(db, current_user.id)
 
     # Pessimistic row-level lock on CoachProfile for race-safe booking
     coach_profile = (
@@ -73,7 +110,6 @@ def create_session(
 
     session_end = (
         datetime.combine(
-
             session_data.session_date,
             session_data.start_time,
         )
@@ -133,6 +169,7 @@ def create_session(
 
     return new_session
 
+
 @router.get(
     "/my",
     response_model=list[SessionResponse],
@@ -141,31 +178,14 @@ def get_my_sessions(
     current_user: User = Depends(require_student),
     db: Session = Depends(get_db),
 ):
-    student_profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.user_id == current_user.id)
-        .first()
-    )
-
-    if student_profile is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student profile not found",
-        )
-
-    sessions = (
+    student_profile = _get_student_profile(db, current_user.id)
+    return (
         db.query(CoachingSession)
-        .filter(
-            CoachingSession.student_id == student_profile.id
-        )
-        .order_by(
-            CoachingSession.session_date,
-            CoachingSession.start_time,
-        )
+        .filter(CoachingSession.student_id == student_profile.id)
+        .order_by(CoachingSession.session_date, CoachingSession.start_time)
         .all()
     )
 
-    return sessions
 
 @router.get(
     "/requests",
@@ -175,31 +195,14 @@ def get_coach_requests(
     current_user: User = Depends(require_coach),
     db: Session = Depends(get_db),
 ):
-    coach_profile = (
-        db.query(CoachProfile)
-        .filter(CoachProfile.user_id == current_user.id)
-        .first()
-    )
-
-    if coach_profile is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Coach profile not found",
-        )
-
-    sessions = (
+    coach_profile = _get_coach_profile(db, current_user.id)
+    return (
         db.query(CoachingSession)
-        .filter(
-            CoachingSession.coach_id == coach_profile.id
-        )
-        .order_by(
-            CoachingSession.session_date,
-            CoachingSession.start_time,
-        )
+        .filter(CoachingSession.coach_id == coach_profile.id)
+        .order_by(CoachingSession.session_date, CoachingSession.start_time)
         .all()
     )
 
-    return sessions
 
 @router.put(
     "/{session_id}/accept",
@@ -210,33 +213,8 @@ def accept_session(
     current_user: User = Depends(require_coach),
     db: Session = Depends(get_db),
 ):
-    coach_profile = (
-        db.query(CoachProfile)
-        .filter(CoachProfile.user_id == current_user.id)
-        .with_for_update()
-        .first()
-    )
-
-    if coach_profile is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Coach profile not found",
-        )
-
-    session = (
-        db.query(CoachingSession)
-        .filter(
-            CoachingSession.id == session_id,
-            CoachingSession.coach_id == coach_profile.id,
-        )
-        .first()
-    )
-
-    if session is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Session not found",
-        )
+    coach_profile = _get_coach_profile(db, current_user.id, lock=True)
+    session = _get_owned_session(db, session_id, coach_id=coach_profile.id)
 
     if session.status != SessionStatus.PENDING:
         raise HTTPException(
@@ -244,7 +222,6 @@ def accept_session(
             detail="Only pending sessions can be accepted",
         )
 
-    # Validate that this session does not conflict with any already accepted session
     session_start = datetime.combine(session.session_date, session.start_time)
     session_end = session_start + timedelta(minutes=session.duration_minutes)
 
@@ -269,11 +246,10 @@ def accept_session(
             )
 
     session.status = SessionStatus.ACCEPTED
-
     db.commit()
     db.refresh(session)
-
     return session
+
 
 @router.put(
     "/{session_id}/reject",
@@ -284,32 +260,8 @@ def reject_session(
     current_user: User = Depends(require_coach),
     db: Session = Depends(get_db),
 ):
-    coach_profile = (
-        db.query(CoachProfile)
-        .filter(CoachProfile.user_id == current_user.id)
-        .first()
-    )
-
-    if coach_profile is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Coach profile not found",
-        )
-
-    session = (
-        db.query(CoachingSession)
-        .filter(
-            CoachingSession.id == session_id,
-            CoachingSession.coach_id == coach_profile.id,
-        )
-        .first()
-    )
-
-    if session is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Session not found",
-        )
+    coach_profile = _get_coach_profile(db, current_user.id)
+    session = _get_owned_session(db, session_id, coach_id=coach_profile.id)
 
     if session.status != SessionStatus.PENDING:
         raise HTTPException(
@@ -318,11 +270,10 @@ def reject_session(
         )
 
     session.status = SessionStatus.REJECTED
-
     db.commit()
     db.refresh(session)
-
     return session
+
 
 @router.put(
     "/{session_id}/cancel",
@@ -333,32 +284,8 @@ def cancel_session(
     current_user: User = Depends(require_student),
     db: Session = Depends(get_db),
 ):
-    student_profile = (
-        db.query(StudentProfile)
-        .filter(StudentProfile.user_id == current_user.id)
-        .first()
-    )
-
-    if student_profile is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Student profile not found",
-        )
-
-    session = (
-        db.query(CoachingSession)
-        .filter(
-            CoachingSession.id == session_id,
-            CoachingSession.student_id == student_profile.id,
-        )
-        .first()
-    )
-
-    if session is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Session not found",
-        )
+    student_profile = _get_student_profile(db, current_user.id)
+    session = _get_owned_session(db, session_id, student_id=student_profile.id)
 
     if session.status != SessionStatus.PENDING:
         raise HTTPException(
@@ -367,11 +294,10 @@ def cancel_session(
         )
 
     session.status = SessionStatus.CANCELLED
-
     db.commit()
     db.refresh(session)
-
     return session
+
 
 @router.put(
     "/{session_id}/complete",
@@ -383,32 +309,8 @@ def complete_session(
     current_user: User = Depends(require_coach),
     db: Session = Depends(get_db),
 ):
-    coach_profile = (
-        db.query(CoachProfile)
-        .filter(CoachProfile.user_id == current_user.id)
-        .first()
-    )
-
-    if coach_profile is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Coach profile not found",
-        )
-
-    session = (
-        db.query(CoachingSession)
-        .filter(
-            CoachingSession.id == session_id,
-            CoachingSession.coach_id == coach_profile.id,
-        )
-        .first()
-    )
-
-    if session is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Session not found",
-        )
+    coach_profile = _get_coach_profile(db, current_user.id)
+    session = _get_owned_session(db, session_id, coach_id=coach_profile.id)
 
     if session.status != SessionStatus.ACCEPTED:
         raise HTTPException(
@@ -418,10 +320,8 @@ def complete_session(
 
     session.coach_remarks = session_data.coach_remarks
     session.status = SessionStatus.COMPLETED
-
     db.commit()
     db.refresh(session)
-
     return session
 
 

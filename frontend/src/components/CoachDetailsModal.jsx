@@ -1,6 +1,5 @@
-import React from 'react';
 import Modal from './Modal';
-import { Briefcase, DollarSign, Calendar, Sparkles, ArrowRight } from 'lucide-react';
+import { Briefcase, Calendar, ArrowRight } from 'lucide-react';
 
 function CoachDetailsModal({ isOpen, onClose, coach, onBookSession }) {
   if (!coach) return null;

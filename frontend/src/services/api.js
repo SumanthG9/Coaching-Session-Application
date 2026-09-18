@@ -17,7 +17,7 @@ async function apiRequest(endpoint, options = {}) {
     return null;
   }
 
-  let data = null;
+  let data;
   const contentType = response.headers.get('content-type');
   if (contentType && contentType.includes('application/json')) {
     data = await response.json();
@@ -26,6 +26,18 @@ async function apiRequest(endpoint, options = {}) {
   }
 
   if (!response.ok) {
+    if (response.status === 401 && endpoint !== '/auth/login') {
+      localStorage.removeItem('access_token');
+      if (
+        typeof window !== 'undefined' &&
+        window.location.pathname !== '/login' &&
+        !window.location.pathname.startsWith('/register') &&
+        window.location.pathname !== '/'
+      ) {
+        window.location.href = '/login';
+      }
+    }
+
     let errorMessage = 'Something went wrong';
     if (data && typeof data === 'object') {
       if (Array.isArray(data.detail)) {

@@ -9,7 +9,7 @@ from app.coaches.search_router import router as coach_search_router
 from app.sessions.router import router as sessions_router
 from app.database.database import engine     
 
-app = FastAPI( title="Coaching Management System API",
+app = FastAPI( title="Student-Coach Management API",
               version="1.0.0" 
 )
 
@@ -18,9 +18,8 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
-        "http://192.168.29.248:5173",
+      
     ],
-    allow_origin_regex=r"^https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -35,7 +34,7 @@ app.include_router(sessions_router)
 
 @app.get("/")
 def root():
-    return { "message" : "Coaching Management System API is running"}
+    return { "message" : "Student-Coach Management API is running"}
 
 @app.get("/health") 
 def check_health():

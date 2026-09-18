@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Modal from './Modal';
 import { createSession } from '../services/sessionService';
 import { useAuth } from '../context/AuthContext';
-import { Calendar, Clock, BookOpen, MessageSquare, AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 function BookSessionModal({ isOpen, onClose, coach, onSuccess }) {
   const { token } = useAuth();

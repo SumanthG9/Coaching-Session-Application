@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import { getStudentProfile, updateStudentProfile } from '../services/studentService';
 import { useAuth } from '../context/AuthContext';
-import { User, Phone, GraduationCap, FileText, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { Phone, GraduationCap, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
 
 function StudentProfile() {
   const { user, token } = useAuth();

@@ -16,9 +16,7 @@ import {
   User,
   AlertCircle,
   CheckCircle2,
-  XCircle,
   Sparkles,
-  MessageSquare,
   Check,
   X,
   ArrowRight,
@@ -37,6 +35,10 @@ function CoachRequests() {
   const [sessionToComplete, setSessionToComplete] = useState(null);
   const [coachRemarks, setCoachRemarks] = useState('');
   const [completing, setCompleting] = useState(false);
+
+  // Decline session modal state
+  const [sessionToDecline, setSessionToDecline] = useState(null);
+  const [declining, setDeclining] = useState(false);
 
   // Action loading IDs
   const [actionLoadingId, setActionLoadingId] = useState(null);
@@ -75,22 +77,21 @@ function CoachRequests() {
     }
   }
 
-  async function handleReject(session) {
-    if (!window.confirm(`Are you sure you want to decline the session request for "${session.topic}"?`)) {
-      return;
-    }
-    setActionLoadingId(session.id);
+  async function handleConfirmDecline() {
+    if (!sessionToDecline) return;
+    setDeclining(true);
     setError('');
     try {
-      await rejectSession(token, session.id);
-      setToastMessage(`Session #${session.id} rejected.`);
+      await rejectSession(token, sessionToDecline.id);
+      setToastMessage(`Session #${sessionToDecline.id} declined.`);
       setTimeout(() => setToastMessage(''), 4000);
+      setSessionToDecline(null);
       await fetchRequests();
     } catch (err) {
       console.error('Failed to reject session:', err);
-      setError(err.message || 'Failed to reject session.');
+      setError(err.message || 'Failed to decline session.');
     } finally {
-      setActionLoadingId(null);
+      setDeclining(false);
     }
   }
 
@@ -107,7 +108,7 @@ function CoachRequests() {
       await fetchRequests();
     } catch (err) {
       console.error('Failed to complete session:', err);
-      alert(err.message || 'Failed to mark session as completed.');
+      setError(err.message || 'Failed to mark session as completed.');
     } finally {
       setCompleting(false);
     }
@@ -293,7 +294,7 @@ function CoachRequests() {
                           <button
                             type="button"
                             disabled={isActionLoading}
-                            onClick={() => handleReject(session)}
+                            onClick={() => setSessionToDecline(session)}
                             className="px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200/70 transition-colors flex items-center gap-1 disabled:opacity-50"
                           >
                             <X className="w-3.5 h-3.5" />
@@ -381,6 +382,40 @@ function CoachRequests() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Decline Confirmation Modal */}
+      <Modal
+        isOpen={Boolean(sessionToDecline)}
+        onClose={() => setSessionToDecline(null)}
+        title="Decline Session Request?"
+        description="Are you sure you want to decline this session request? The student will be notified."
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-slate-600">
+            Decline request for <strong className="text-slate-900">"{sessionToDecline?.topic}"</strong> from student{' '}
+            <strong className="text-slate-900">{sessionToDecline?.student_name}</strong>.
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <button
+              type="button"
+              disabled={declining}
+              onClick={() => setSessionToDecline(null)}
+              className="px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 hover:bg-slate-100"
+            >
+              Keep Request
+            </button>
+            <button
+              type="button"
+              disabled={declining}
+              onClick={handleConfirmDecline}
+              className="px-4 py-2 text-xs font-semibold rounded-xl text-white bg-rose-600 hover:bg-rose-700 transition-all disabled:opacity-50 shadow-xs"
+            >
+              {declining ? 'Declining...' : 'Confirm Decline'}
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

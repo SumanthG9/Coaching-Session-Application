@@ -15,6 +15,18 @@ router = APIRouter(
 )
 
 
+def _format_coach(coach_profile: CoachProfile, user: User, skills: list[str]) -> dict:
+    return {
+        "id": coach_profile.id,
+        "name": user.name,
+        "bio": coach_profile.bio,
+        "years_experience": coach_profile.years_experience,
+        "session_fee": coach_profile.session_fee,
+        "availability": coach_profile.availability,
+        "skills": skills,
+    }
+
+
 @router.get(
     "",
     response_model=list[CoachSearchResponse],
@@ -46,27 +58,17 @@ def search_coaches(
         )
 
     rows = query.all()
-
-    coaches = {}
+    coaches: dict[int, dict] = {}
 
     for coach_profile, user, coach_skill in rows:
         if coach_profile.id not in coaches:
-            coaches[coach_profile.id] = {
-                "id": coach_profile.id,
-                "name": user.name,
-                "bio": coach_profile.bio,
-                "years_experience": coach_profile.years_experience,
-                "session_fee": coach_profile.session_fee,
-                "availability": coach_profile.availability,
-                "skills": [],
-            }
+            coaches[coach_profile.id] = _format_coach(coach_profile, user, [])
 
         if coach_skill is not None:
-            coaches[coach_profile.id]["skills"].append(
-                coach_skill.skill
-            )
+            coaches[coach_profile.id]["skills"].append(coach_skill.skill)
 
     return list(coaches.values())
+
 
 @router.get(
     "/{coach_id}",
@@ -104,19 +106,5 @@ def get_coach_details(
         )
 
     coach_profile, user, _ = rows[0]
-
-    skills = [
-        coach_skill.skill
-        for _, _, coach_skill in rows
-        if coach_skill is not None
-    ]
-
-    return {
-        "id": coach_profile.id,
-        "name": user.name,
-        "bio": coach_profile.bio,
-        "years_experience": coach_profile.years_experience,
-        "session_fee": coach_profile.session_fee,
-        "availability": coach_profile.availability,
-        "skills": skills,
-    }
+    skills = [cs.skill for _, _, cs in rows if cs is not None]
+    return _format_coach(coach_profile, user, skills)

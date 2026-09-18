@@ -14,20 +14,15 @@ import { useAuth } from '../context/AuthContext';
 import {
   Calendar,
   Clock,
-  User,
   ArrowLeft,
   AlertCircle,
   CheckCircle2,
-  XCircle,
   MessageSquare,
   Sparkles,
-  BookOpen,
   Check,
   X,
-  Send,
   FileText,
-  UserCheck,
-  Briefcase,
+  Video,
 } from 'lucide-react';
 
 function SessionDetails() {
@@ -43,6 +38,9 @@ function SessionDetails() {
   // Modals
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
+  const [declining, setDeclining] = useState(false);
 
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [coachRemarksInput, setCoachRemarksInput] = useState('');
@@ -86,25 +84,23 @@ function SessionDetails() {
       showToast('Session accepted successfully!');
       await fetchSession();
     } catch (err) {
-      alert(err.message || 'Failed to accept session.');
+      showToast(err.message || 'Failed to accept session.');
     } finally {
       setActionLoading(false);
     }
   }
 
-  async function handleReject() {
-    if (!window.confirm('Are you sure you want to decline this session request?')) {
-      return;
-    }
-    setActionLoading(true);
+  async function handleConfirmDecline() {
+    setDeclining(true);
     try {
       await rejectSession(token, session.id);
       showToast('Session request declined.');
+      setShowDeclineModal(false);
       await fetchSession();
     } catch (err) {
-      alert(err.message || 'Failed to decline session.');
+      showToast(err.message || 'Failed to decline session.');
     } finally {
-      setActionLoading(false);
+      setDeclining(false);
     }
   }
 
@@ -116,7 +112,7 @@ function SessionDetails() {
       setShowCancelModal(false);
       await fetchSession();
     } catch (err) {
-      alert(err.message || 'Failed to cancel session.');
+      showToast(err.message || 'Failed to cancel session.');
     } finally {
       setCancelling(false);
     }
@@ -131,7 +127,7 @@ function SessionDetails() {
       setShowCompleteModal(false);
       await fetchSession();
     } catch (err) {
-      alert(err.message || 'Failed to complete session.');
+      showToast(err.message || 'Failed to complete session.');
     } finally {
       setCompleting(false);
     }
@@ -253,7 +249,7 @@ function SessionDetails() {
                   {isCoach && status === 'pending' && (
                     <>
                       <button
-                        onClick={handleReject}
+                        onClick={() => setShowDeclineModal(true)}
                         disabled={actionLoading}
                         className="px-4 py-2.5 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-sm font-semibold transition-all shadow-sm flex items-center gap-2"
                       >
@@ -271,13 +267,26 @@ function SessionDetails() {
                     </>
                   )}
 
+                  {/* Accepted Sessions: Meeting Room link for both participants */}
+                  {status === 'accepted' && (
+                    <a
+                      href={`https://meet.google.com/lookup/student-coach-session-${session.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-all shadow-md shadow-indigo-200 flex items-center gap-2"
+                    >
+                      <Video className="w-4 h-4" />
+                      <span>Join Live Meeting</span>
+                    </a>
+                  )}
+
                   {/* Coach accepted -> complete */}
                   {isCoach && status === 'accepted' && (
                     <button
                       onClick={() => setShowCompleteModal(true)}
-                      className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-all shadow-md shadow-indigo-200 flex items-center gap-2"
+                      className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold transition-all shadow-sm flex items-center gap-2"
                     >
-                      <Sparkles className="w-4 h-4" />
+                      <Sparkles className="w-4 h-4 text-purple-300" />
                       <span>Complete Session</span>
                     </button>
                   )}
@@ -469,6 +478,34 @@ function SessionDetails() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Decline Confirmation Modal */}
+      <Modal
+        isOpen={showDeclineModal}
+        onClose={() => setShowDeclineModal(false)}
+        title="Decline Session Request?"
+        description="Are you sure you want to decline this coaching request? The student will be notified."
+        maxWidth="max-w-md"
+      >
+        <div className="flex items-center justify-end gap-3 mt-6">
+          <button
+            type="button"
+            onClick={() => setShowDeclineModal(false)}
+            disabled={declining}
+            className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 text-sm font-medium transition-colors"
+          >
+            Keep Session
+          </button>
+          <button
+            type="button"
+            onClick={handleConfirmDecline}
+            disabled={declining}
+            className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold transition-all shadow-sm"
+          >
+            {declining ? 'Declining...' : 'Confirm Decline'}
+          </button>
+        </div>
       </Modal>
     </div>
   );

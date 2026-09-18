@@ -53,7 +53,13 @@ function CoachListing() {
     setTimeout(() => setToastMessage(''), 5000);
   }
 
-  const popularSkills = ['Python', 'React', 'FastAPI', 'Machine Learning', 'System Design', 'JavaScript'];
+  // Dynamically compute popular skill tags from actual coaches in database
+  const dynamicSkills = Array.from(
+    new Set(coaches.flatMap((c) => c.skills || []))
+  ).slice(0, 8);
+  const popularSkills = dynamicSkills.length > 0
+    ? dynamicSkills
+    : ['Python', 'React', 'FastAPI', 'System Design'];
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">

@@ -1,8 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
-import RegisterStudent from "./pages/RegisterStudent";
-import RegisterCoach from "./pages/RegisterCoach";
+import Register from "./pages/Register";
+import NotFound from "./pages/NotFound";
 
 // Student pages
 import StudentDashboard from "./pages/StudentDashboard";
@@ -26,8 +26,9 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/register/student" element={<RegisterStudent />} />
-        <Route path="/register/coach" element={<RegisterCoach />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/register/student" element={<Register defaultRole="student" />} />
+        <Route path="/register/coach" element={<Register defaultRole="coach" />} />
 
         {/* Protected Student Routes */}
         <Route
@@ -116,7 +117,7 @@ function App() {
         />
 
         {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   );

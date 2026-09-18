@@ -1,5 +1,4 @@
-import React from 'react';
-import { Briefcase, DollarSign, Calendar, Sparkles, ArrowRight } from 'lucide-react';
+import { Briefcase, Calendar, ArrowRight } from 'lucide-react';
 
 function CoachCard({ coach, onBook, onViewDetails }) {
   const skills = coach.skills || [];

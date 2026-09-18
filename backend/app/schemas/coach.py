@@ -1,4 +1,3 @@
-from email.policy import default
 from decimal import Decimal
 from pydantic import BaseModel, Field
 

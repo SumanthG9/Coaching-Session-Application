@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import StatusBadge from '../components/StatusBadge';
+import StatCard from '../components/StatCard';
+import Modal from '../components/Modal';
 import {
   getCoachSessionRequests,
   acceptSession,
@@ -15,7 +17,6 @@ import {
   TrendingUp,
   Sparkles,
   ArrowRight,
-  User,
   Calendar,
   Layers,
   Check,
@@ -32,6 +33,8 @@ function CoachDashboard() {
   const [error, setError] = useState('');
   const [toastMessage, setToastMessage] = useState('');
   const [actionLoadingId, setActionLoadingId] = useState(null);
+  const [sessionToDecline, setSessionToDecline] = useState(null);
+  const [declining, setDeclining] = useState(false);
 
   const loadDashboardData = useCallback(async () => {
     if (!token) return;
@@ -65,25 +68,26 @@ function CoachDashboard() {
       await loadDashboardData();
     } catch (err) {
       console.error('Failed to accept session:', err);
-      alert(err.message || 'Failed to accept session.');
+      setError(err.message || 'Failed to accept session.');
     } finally {
       setActionLoadingId(null);
     }
   }
 
-  async function handleQuickReject(session) {
-    if (!window.confirm(`Decline coaching session for "${session.topic}"?`)) return;
-    setActionLoadingId(session.id);
+  async function handleConfirmDecline() {
+    if (!sessionToDecline) return;
+    setDeclining(true);
     try {
-      await rejectSession(token, session.id);
-      setToastMessage(`Session declined.`);
+      await rejectSession(token, sessionToDecline.id);
+      setToastMessage(`Session request declined.`);
       setTimeout(() => setToastMessage(''), 4000);
+      setSessionToDecline(null);
       await loadDashboardData();
     } catch (err) {
       console.error('Failed to reject session:', err);
-      alert(err.message || 'Failed to decline session.');
+      setError(err.message || 'Failed to decline session.');
     } finally {
-      setActionLoadingId(null);
+      setDeclining(false);
     }
   }
 
@@ -96,7 +100,7 @@ function CoachDashboard() {
     <div className="min-h-screen bg-slate-50 flex flex-col">
       <Navbar />
 
-      {/* Toast */}
+      {/* Floating Toast */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-5 py-3.5 rounded-2xl shadow-xl border border-slate-700 flex items-center gap-3 text-sm animate-in-modal">
           <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
@@ -105,6 +109,14 @@ function CoachDashboard() {
       )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
+        {/* Error Alert */}
+        {error && (
+          <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-3 text-rose-700 text-sm">
+            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-rose-500" />
+            <span>{error}</span>
+          </div>
+        )}
+
         {/* Welcome Banner */}
         <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-800 p-6 sm:p-10 text-white shadow-xl shadow-purple-900/15 mb-8">
           <div className="relative z-10 max-w-2xl">
@@ -134,67 +146,39 @@ function CoachDashboard() {
               </Link>
             </div>
           </div>
-
           <div className="absolute -right-16 -bottom-16 w-80 h-80 rounded-full bg-white/10 blur-2xl pointer-events-none" />
         </div>
 
-        {/* 4 Stat Cards */}
+        {/* 4 Stat Cards using reusable StatCard */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-          {/* Pending Requests */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-amber-700">Pending Requests</span>
-              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <Clock className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <span className="text-2xl sm:text-3xl font-extrabold text-slate-900">{pendingRequests.length}</span>
-              <p className="text-[11px] text-slate-400 mt-0.5">Awaiting your approval</p>
-            </div>
-          </div>
-
-          {/* Accepted Sessions */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-emerald-700">Scheduled Sessions</span>
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <CheckCircle2 className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <span className="text-2xl sm:text-3xl font-extrabold text-slate-900">{acceptedSessions.length}</span>
-              <p className="text-[11px] text-slate-400 mt-0.5">Upcoming confirmed calls</p>
-            </div>
-          </div>
-
-          {/* Completed Sessions */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-purple-700">Completed Sessions</span>
-              <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                <TrendingUp className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <span className="text-2xl sm:text-3xl font-extrabold text-slate-900">{completedSessions.length}</span>
-              <p className="text-[11px] text-slate-400 mt-0.5">Successfully mentored</p>
-            </div>
-          </div>
-
-          {/* Skills Listed */}
-          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col justify-between">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-slate-500">Skills Listed</span>
-              <div className="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
-                <Layers className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <span className="text-2xl sm:text-3xl font-extrabold text-slate-900">{skills.length}</span>
-              <p className="text-[11px] text-slate-400 mt-0.5">Expertise tags</p>
-            </div>
-          </div>
+          <StatCard
+            label="Pending Requests"
+            value={pendingRequests.length}
+            icon={Clock}
+            description="Awaiting your approval"
+            color="amber"
+          />
+          <StatCard
+            label="Scheduled Sessions"
+            value={acceptedSessions.length}
+            icon={CheckCircle2}
+            description="Upcoming confirmed calls"
+            color="emerald"
+          />
+          <StatCard
+            label="Completed Sessions"
+            value={completedSessions.length}
+            icon={TrendingUp}
+            description="Successfully mentored"
+            color="purple"
+          />
+          <StatCard
+            label="Skills Listed"
+            value={skills.length}
+            icon={Layers}
+            description="Expertise tags"
+            color="slate"
+          />
         </div>
 
         {/* Pending Requests Direct Action Widget */}
@@ -248,7 +232,7 @@ function CoachDashboard() {
                     <button
                       type="button"
                       disabled={actionLoadingId === session.id}
-                      onClick={() => handleQuickReject(session)}
+                      onClick={() => setSessionToDecline(session)}
                       className="px-3 py-1.5 rounded-xl text-xs font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors flex items-center gap-1 disabled:opacity-50"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -335,6 +319,40 @@ function CoachDashboard() {
           )}
         </div>
       </main>
+
+      {/* Decline Confirmation Modal */}
+      <Modal
+        isOpen={Boolean(sessionToDecline)}
+        onClose={() => setSessionToDecline(null)}
+        title="Decline Session Request?"
+        description="Are you sure you want to decline this coaching request? The student will be notified."
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <p className="text-xs text-slate-600">
+            Decline request for <strong className="text-slate-900">"{sessionToDecline?.topic}"</strong> from student{' '}
+            <strong className="text-slate-900">{sessionToDecline?.student_name}</strong>.
+          </p>
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <button
+              type="button"
+              disabled={declining}
+              onClick={() => setSessionToDecline(null)}
+              className="px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 hover:bg-slate-100"
+            >
+              Keep Request
+            </button>
+            <button
+              type="button"
+              disabled={declining}
+              onClick={handleConfirmDecline}
+              className="px-4 py-2 text-xs font-semibold rounded-xl text-white bg-rose-600 hover:bg-rose-700 transition-all disabled:opacity-50 shadow-xs"
+            >
+              {declining ? 'Declining...' : 'Confirm Decline'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

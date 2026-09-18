@@ -1,4 +1,4 @@
-# 🎯 Coaching Session Application
+# 🎯 Student-Coach Management
 
 > A robust, full-stack web application connecting students with expert coaches for personalized mentoring, scheduling, and session lifecycle management.
 
@@ -42,7 +42,7 @@
 
 ## 🌟 Overview
 
-The **Coaching Session Application** bridges the gap between aspiring learners and experienced mentors. It provides an end-to-end platform where coaches can showcase their professional expertise, set availability and rates, and review incoming session requests. Students can explore coaches by skills, book targeted coaching sessions without scheduling conflicts, track real-time request statuses, and receive comprehensive feedback remarks once sessions are completed.
+The **Student-Coach Management** platform bridges the gap between aspiring learners and experienced mentors. It provides an end-to-end platform where coaches can showcase their professional expertise, set availability and rates, and review incoming session requests. Students can explore coaches by skills, book targeted coaching sessions without scheduling conflicts, track real-time request statuses, and receive comprehensive feedback remarks once sessions are completed.
 
 ---
 
@@ -385,39 +385,6 @@ All protected endpoints require the HTTP header:
 
 ---
 
-## 🧪 Automated Testing
-
-The repository includes a complete end-to-end integration test (`test_flow.py`) that exercises the entire business flow across 10 steps.
-
-### Running the End-to-End Test
-
-1. Ensure your backend server is running on `http://localhost:8000`:
-   ```bash
-   # In terminal 1 (with venv active):
-   uvicorn app.main:app --reload --port 8000
-   ```
-
-2. Run the test script in the project root:
-   ```bash
-   # In terminal 2:
-   python test_flow.py
-   ```
-
-### Test Flow Breakdown
-The automated test verifies:
-1. **Coach Registration & Login**: Creates a coach, hashes password with Argon2, validates JWT issuance.
-2. **Coach Profile Configuration**: Updates bio, years of experience, session fee, and availability.
-3. **Skill Management**: Adds multiple skills (Python, FastAPI, React).
-4. **Student Registration & Login**: Creates student account and receives JWT.
-5. **Coach Discovery**: Student queries `/coaches` and locates the newly registered coach with skill tags.
-6. **Session Booking**: Student books a slot; validates initial `PENDING` status.
-7. **Coach Request Queue**: Coach retrieves incoming requests at `/sessions/requests`.
-8. **Session Acceptance**: Coach transitions session from `PENDING` $\rightarrow$ `ACCEPTED`.
-9. **Session Completion & Remarks**: Coach submits session remarks and transitions to `COMPLETED`.
-10. **Student History Verification**: Student reviews completed session and reads the coach's feedback remarks.
-
----
-
 ## 📁 Project Directory Structure
 
 ```text
@@ -472,15 +439,16 @@ coaching/
 │   │   ├── pages/                    # Application pages
 │   │   │   ├── Landing.jsx           # Landing / hero page
 │   │   │   ├── Login.jsx             # Authentication page
-│   │   │   ├── RegisterStudent.jsx   # Student signup page
-│   │   │   ├── RegisterCoach.jsx     # Coach signup page
+│   │   │   ├── Register.jsx          # Unified signup page with role switcher
+│   │   │   ├── NotFound.jsx          # Dedicated 404 page
 │   │   │   ├── StudentDashboard.jsx  # Student overview & quick actions
 │   │   │   ├── CoachListing.jsx      # Coach search & skill filter
 │   │   │   ├── CoachProfile.jsx      # Coach profile editor & view
 │   │   │   ├── StudentSessions.jsx   # Student session booking history
 │   │   │   ├── StudentProfile.jsx    # Student profile editor
 │   │   │   ├── CoachDashboard.jsx    # Coach analytics & active requests
-│   │   │   └── CoachRequests.jsx     # Coach request accept/reject/complete modal
+│   │   │   ├── CoachRequests.jsx     # Coach request accept/reject/complete modal
+│   │   │   └── SessionDetails.jsx    # Live meeting launcher & session details
 │   │   ├── services/                 # API service layer
 │   │   │   ├── api.js                # Centralized fetch wrapper & error handler
 │   │   │   ├── authService.js        # Auth API calls
@@ -494,7 +462,6 @@ coaching/
 │   └── vite.config.js                # Vite build configuration
 │
 ├── Coaching_Project_Complete_Requirements.txt # Complete specifications
-├── test_flow.py                      # Automated 10-step E2E integration test
 ├── .gitignore                        # Git ignore file
 └── README.md                         # Project documentation
 ```

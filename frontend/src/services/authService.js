@@ -10,32 +10,28 @@ async function login(email, password) {
   });
 }
 
-async function registerStudent(name, email, password) {
-  return apiRequest('/auth/register/student', {
+async function registerUser(name, email, password, role) {
+  return apiRequest('/auth/register', {
     method: 'POST',
     body: JSON.stringify({
       name,
       email,
       password,
-      role: 'student',
+      role,
     }),
   });
 }
 
+async function registerStudent(name, email, password) {
+  return registerUser(name, email, password, 'student');
+}
+
 async function registerCoach(name, email, password) {
-  return apiRequest('/auth/register/coach', {
-    method: 'POST',
-    body: JSON.stringify({
-      name,
-      email,
-      password,
-      role: 'coach',
-    }),
-  });
+  return registerUser(name, email, password, 'coach');
 }
 
 async function getCurrentUser(token) {
   return apiRequestWithToken('/auth/me', token);
 }
 
-export { login, registerStudent, registerCoach, getCurrentUser };
+export { login, registerUser, registerStudent, registerCoach, getCurrentUser };

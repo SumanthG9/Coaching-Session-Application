@@ -14,11 +14,9 @@ import {
   Calendar,
   Sparkles,
   Plus,
-  Trash2,
   AlertCircle,
   CheckCircle2,
   X,
-  Clock,
 } from 'lucide-react';
 
 function CoachProfile() {

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Clock, CheckCircle2, XCircle, AlertCircle, Sparkles } from 'lucide-react';
 
 function StatusBadge({ status, size = 'md' }) {

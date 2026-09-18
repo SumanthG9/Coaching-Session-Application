@@ -8,11 +8,8 @@ import { useAuth } from '../context/AuthContext';
 import {
   Calendar,
   Clock,
-  UserCheck,
   AlertCircle,
-  MessageSquare,
   CheckCircle2,
-  XCircle,
   Sparkles,
   ArrowRight,
 } from 'lucide-react';
@@ -59,7 +56,7 @@ function StudentSessions() {
       await fetchSessions();
     } catch (err) {
       console.error('Failed to cancel session:', err);
-      alert(err.message || 'Could not cancel session.');
+      setError(err.message || 'Could not cancel session.');
     } finally {
       setCancelling(false);
     }
@@ -186,7 +183,6 @@ function StudentSessions() {
           <div className="space-y-4">
             {filteredSessions.map((session) => {
               const isPending = session.status?.toLowerCase() === 'pending';
-              const isCompleted = session.status?.toLowerCase() === 'completed';
 
               return (
                 <div
