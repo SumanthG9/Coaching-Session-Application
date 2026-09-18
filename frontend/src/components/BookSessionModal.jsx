@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Modal from './Modal';
 import { createSession } from '../services/sessionService';
 import { useAuth } from '../context/AuthContext';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Calendar } from 'lucide-react';
 
 function BookSessionModal({ isOpen, onClose, coach, onSuccess }) {
   const { token } = useAuth();
@@ -16,6 +16,7 @@ function BookSessionModal({ isOpen, onClose, coach, onSuccess }) {
   const [topic, setTopic] = useState('');
   const [studentMessage, setStudentMessage] = useState('');
   const [error, setError] = useState('');
+  const [suggestedSlot, setSuggestedSlot] = useState(null);
   const [loading, setLoading] = useState(false);
 
   if (!coach) return null;
@@ -23,6 +24,7 @@ function BookSessionModal({ isOpen, onClose, coach, onSuccess }) {
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
+    setSuggestedSlot(null);
 
     if (!sessionDate) {
       setError('Please select a session date');
@@ -62,7 +64,11 @@ function BookSessionModal({ isOpen, onClose, coach, onSuccess }) {
       onClose();
     } catch (err) {
       console.error('Failed to book session:', err);
-      setError(err.message || 'Failed to request session. Please check your inputs.');
+      const msg = err.message || 'Failed to request session. Please check your inputs.';
+      setError(msg);
+      if (err.payload && err.payload.nearest_slot) {
+        setSuggestedSlot(err.payload.nearest_slot);
+      }
     } finally {
       setLoading(false);
     }
@@ -71,15 +77,38 @@ function BookSessionModal({ isOpen, onClose, coach, onSuccess }) {
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => {
+        setError('');
+        setSuggestedSlot(null);
+        onClose();
+      }}
       title={`Request Session with ${coach.name}`}
       description="Select your preferred schedule, discussion topic, and session duration"
       maxWidth="max-w-xl"
     >
       {error && (
-        <div className="mb-4 p-3.5 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-2.5 text-rose-700 text-xs">
-          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
-          <span>{error}</span>
+        <div className="mb-4 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+          <div className="flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-500" />
+            <div className="flex-1">
+              <span className="font-medium leading-relaxed block">{error}</span>
+              {suggestedSlot && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (suggestedSlot.date) setSessionDate(suggestedSlot.date);
+                    if (suggestedSlot.time) setStartTime(suggestedSlot.time);
+                    setError('');
+                    setSuggestedSlot(null);
+                  }}
+                  className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white rounded-lg text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                >
+                  <Calendar className="w-3.5 h-3.5" />
+                  Select suggested slot ({suggestedSlot.display})
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -89,7 +118,7 @@ function BookSessionModal({ isOpen, onClose, coach, onSuccess }) {
           <div>
             <span className="font-semibold text-indigo-900 block">{coach.name}</span>
             <span className="text-indigo-600">
-              ${parseFloat(coach.session_fee || 0).toFixed(0)} / session • {coach.years_experience} yrs experience
+              ₹{parseFloat(coach.session_fee || 0).toLocaleString('en-IN')} / session • {coach.years_experience} yrs experience
             </span>
           </div>
           {coach.availability && (

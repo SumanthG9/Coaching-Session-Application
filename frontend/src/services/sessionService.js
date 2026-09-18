@@ -44,6 +44,13 @@ async function completeSession(token, sessionId, coachRemarks) {
   });
 }
 
+async function updateSessionMeetingLink(token, sessionId, meetingLink) {
+  return apiRequestWithToken(`/sessions/${sessionId}/meeting-link`, token, {
+    method: 'PUT',
+    body: JSON.stringify({ meeting_link: meetingLink }),
+  });
+}
+
 export {
   createSession,
   getMyStudentSessions,
@@ -53,5 +60,6 @@ export {
   acceptSession,
   rejectSession,
   completeSession,
+  updateSessionMeetingLink,
 };
 

@@ -28,8 +28,11 @@ async function deleteCoachSkill(token, skillId) {
   });
 }
 
-async function searchCoaches(token, skill = '') {
-  const query = skill.trim() ? `?skill=${encodeURIComponent(skill.trim())}` : '';
+async function searchCoaches(token, skill = '', limit = 10) {
+  const params = new URLSearchParams();
+  if (skill.trim()) params.append('skill', skill.trim());
+  if (limit) params.append('limit', limit.toString());
+  const query = params.toString() ? `?${params.toString()}` : '';
   return apiRequestWithToken(`/coaches${query}`, token);
 }
 

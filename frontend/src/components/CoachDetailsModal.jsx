@@ -36,7 +36,7 @@ function CoachDetailsModal({ isOpen, onClose, coach, onBookSession }) {
               </span>
               <span>•</span>
               <span className="font-bold text-slate-900">
-                ${parseFloat(coach.session_fee || 0).toFixed(0)}
+                ₹{parseFloat(coach.session_fee || 0).toLocaleString('en-IN')}
                 <span className="font-normal text-slate-500">/hr</span>
               </span>
             </div>

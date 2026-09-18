@@ -232,3 +232,115 @@ def is_time_within_availability(
         f"Requested session ({day_name} {start_time.strftime('%H:%M')} - "
         f"{session_end_time.strftime('%H:%M')}) is outside the coach's availability window: '{availability_str}'"
     )
+
+
+def find_nearest_available_slot(
+    availability_str: str | None,
+    session_date: date,
+    requested_time: time,
+    duration_minutes: int,
+    existing_sessions: list,
+    search_days_ahead: int = 14,
+) -> dict | None:
+    """
+    Finds the nearest conflict-free slot for a coach starting from session_date.
+    Returns:
+        {
+            "date": "YYYY-MM-DD",
+            "time": "HH:MM",
+            "display": "Today at 6:30 PM (18:30)",
+            "datetime": "2026-09-18T18:30:00",
+        }
+    or None if no slot is found within search_days_ahead.
+    """
+    rules = parse_availability(availability_str)
+    requested_dt = datetime.combine(session_date, requested_time)
+    now = datetime.now()
+
+    # Precompute occupied intervals for existing pending/accepted sessions
+    occupied = []
+    for s in existing_sessions:
+        status_str = str(getattr(s, "status", "")).lower()
+        if "pending" in status_str or "accepted" in status_str:
+            s_date = getattr(s, "session_date", None)
+            s_time = getattr(s, "start_time", None)
+            s_dur = getattr(s, "duration_minutes", None)
+            if s_date and s_time and s_dur:
+                s_start = datetime.combine(s_date, s_time)
+                s_end = s_start + timedelta(minutes=s_dur)
+                occupied.append((s_start, s_end))
+
+    # Helper to check collision
+    def overlaps(cand_start: datetime, cand_end: datetime) -> bool:
+        for o_start, o_end in occupied:
+            if cand_start < o_end and cand_end > o_start:
+                return True
+        return False
+
+    for day_offset in range(search_days_ahead + 1):
+        cur_date = session_date + timedelta(days=day_offset)
+        cur_weekday = cur_date.weekday()
+
+        day_intervals = []
+        if rules:
+            for rule in rules:
+                if cur_weekday in rule["days"]:
+                    day_intervals.append((rule["start_time"], rule["end_time"]))
+        else:
+            # Flexible: default 09:00 to 20:00
+            day_intervals.append((time(9, 0), time(20, 0)))
+
+        if not day_intervals:
+            continue
+
+        valid_slots = []
+        for r_start, r_end in day_intervals:
+            cand_dt = datetime.combine(cur_date, r_start)
+            r_end_dt = datetime.combine(cur_date, r_end)
+
+            while cand_dt + timedelta(minutes=duration_minutes) <= r_end_dt:
+                cand_end_dt = cand_dt + timedelta(minutes=duration_minutes)
+                if cand_dt >= now and not overlaps(cand_dt, cand_end_dt):
+                    valid_slots.append(cand_dt)
+                cand_dt += timedelta(minutes=15)
+
+        if not valid_slots:
+            continue
+
+        if day_offset == 0:
+            # Sort by distance to requested_dt on the same day, preferring future/later if tied
+            valid_slots.sort(
+                key=lambda dt: (
+                    abs((dt - requested_dt).total_seconds()),
+                    -(1 if dt >= requested_dt else 0),
+                )
+            )
+            best = valid_slots[0]
+        else:
+            # Sort by time-of-day closeness to requested_time
+            req_minutes = requested_time.hour * 60 + requested_time.minute
+            valid_slots.sort(
+                key=lambda dt: (
+                    abs((dt.hour * 60 + dt.minute) - req_minutes),
+                    -(1 if (dt.hour * 60 + dt.minute) >= req_minutes else 0),
+                )
+            )
+            best = valid_slots[0]
+
+        time_12h = best.strftime("%I:%M %p").lstrip("0")
+        time_24h = best.strftime("%H:%M")
+        if best.date() == date.today():
+            display = f"Today at {time_12h} ({time_24h})"
+        elif best.date() == session_date:
+            display = f"{best.strftime('%a, %b %d')} at {time_12h} ({time_24h})"
+        else:
+            display = f"{best.strftime('%a, %b %d')} at {time_12h} ({time_24h})"
+
+        return {
+            "date": best.date().isoformat(),
+            "time": time_24h,
+            "display": display,
+            "datetime": best.isoformat(),
+        }
+
+    return None

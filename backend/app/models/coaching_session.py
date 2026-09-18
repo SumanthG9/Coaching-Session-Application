@@ -62,6 +62,10 @@ class CoachingSession(Base):
         Text,
         nullable=True,
     )
+    meeting_link: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
+    )
     status: Mapped[SessionStatus] = mapped_column(
         SQLEnum(SessionStatus),
         nullable=False,

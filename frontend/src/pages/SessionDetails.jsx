@@ -9,6 +9,7 @@ import {
   acceptSession,
   rejectSession,
   completeSession,
+  updateSessionMeetingLink,
 } from '../services/sessionService';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -23,6 +24,7 @@ import {
   X,
   FileText,
   Video,
+  ExternalLink,
 } from 'lucide-react';
 
 function SessionDetails() {
@@ -49,6 +51,10 @@ function SessionDetails() {
   // Action states
   const [actionLoading, setActionLoading] = useState(false);
 
+  // Meeting Link state
+  const [meetingLink, setMeetingLink] = useState('');
+  const [savingLink, setSavingLink] = useState(false);
+
   const fetchSession = useCallback(async () => {
     if (!token || !id) return;
     setLoading(true);
@@ -59,6 +65,7 @@ function SessionDetails() {
       if (data.coach_remarks) {
         setCoachRemarksInput(data.coach_remarks);
       }
+      setMeetingLink(data.meeting_link || '');
     } catch (err) {
       console.error('Failed to load session details:', err);
       setError(err.message || 'Unable to retrieve session details.');
@@ -66,6 +73,25 @@ function SessionDetails() {
       setLoading(false);
     }
   }, [token, id]);
+
+  async function handleSaveMeetingLink(e) {
+    if (e) e.preventDefault();
+    if (!meetingLink.trim()) {
+      showToast('Please provide a valid meeting link.');
+      return;
+    }
+    setSavingLink(true);
+    try {
+      await updateSessionMeetingLink(token, session.id, meetingLink.trim());
+      showToast('Meeting link updated successfully!');
+      await fetchSession();
+    } catch (err) {
+      console.error('Failed to update meeting link:', err);
+      showToast(err.message || 'Failed to update meeting link.');
+    } finally {
+      setSavingLink(false);
+    }
+  }
 
   useEffect(() => {
     fetchSession();
@@ -133,9 +159,11 @@ function SessionDetails() {
     }
   }
 
-  const isStudent = user?.role === 'student';
-  const isCoach = user?.role === 'coach';
+  const userRole = (user?.role || '').toLowerCase();
+  const isStudent = userRole === 'student';
+  const isCoach = userRole === 'coach';
   const status = (session?.status || '').toLowerCase();
+  const hasMeetingLink = Boolean(session?.meeting_link && session.meeting_link.trim().length > 0);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
@@ -267,17 +295,74 @@ function SessionDetails() {
                     </>
                   )}
 
-                  {/* Accepted Sessions: Meeting Room link for both participants */}
+                  {/* Accepted Sessions: Meeting link controls */}
                   {status === 'accepted' && (
-                    <a
-                      href={`https://meet.google.com/lookup/student-coach-session-${session.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-all shadow-md shadow-indigo-200 flex items-center gap-2"
-                    >
-                      <Video className="w-4 h-4" />
-                      <span>Join Live Meeting</span>
-                    </a>
+                    <>
+                      {isCoach ? (
+                        /* Coach: Input to provide meeting link with placeholder and save button */
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                          <form onSubmit={handleSaveMeetingLink} className="flex items-center gap-2">
+                            <div className="relative flex items-center">
+                              <Video className="w-4 h-4 text-indigo-500 absolute left-3 pointer-events-none" />
+                              <input
+                                type="url"
+                                value={meetingLink}
+                                onChange={(e) => setMeetingLink(e.target.value)}
+                                placeholder="Provide meeting link (e.g. Google Meet, Zoom)..."
+                                className="pl-9 pr-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 bg-slate-50/80 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 w-full sm:w-72 text-slate-800 placeholder:text-slate-400 font-medium transition-all shadow-2xs"
+                              />
+                            </div>
+                            <button
+                              type="submit"
+                              disabled={savingLink || !meetingLink.trim()}
+                              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-semibold transition-all shrink-0 shadow-xs"
+                            >
+                              {savingLink ? 'Saving...' : 'Save Link'}
+                            </button>
+                          </form>
+                          {session?.meeting_link && (
+                            <a
+                              href={
+                                session.meeting_link.startsWith('http')
+                                  ? session.meeting_link
+                                  : `https://${session.meeting_link}`
+                              }
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold transition-all shadow-md shadow-indigo-200 flex items-center justify-center gap-1.5 shrink-0"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                              <span>Join Meeting</span>
+                            </a>
+                          )}
+                        </div>
+                      ) : (
+                        /* Student: Can join only if coach provided link, otherwise waiting placeholder */
+                        hasMeetingLink ? (
+                          <a
+                            href={
+                              session.meeting_link.trim().startsWith('http')
+                                ? session.meeting_link.trim()
+                                : `https://${session.meeting_link.trim()}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold transition-all shadow-md shadow-indigo-200 flex items-center gap-2"
+                          >
+                            <Video className="w-4 h-4" />
+                            <span>Join Live Meeting</span>
+                          </a>
+                        ) : (
+                          <div
+                            className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-500 border border-slate-200 text-xs font-semibold flex items-center gap-2 select-none"
+                            title="Your coach has not shared the meeting link yet"
+                          >
+                            <Video className="w-4 h-4 text-slate-400" />
+                            <span>Waiting for coach to provide meeting link</span>
+                          </div>
+                        )
+                      )}
+                    </>
                   )}
 
                   {/* Coach accepted -> complete */}

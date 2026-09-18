@@ -30,7 +30,10 @@ function StudentDashboard() {
       if (!token) return;
       try {
         const data = await getMyStudentSessions(token);
-        setSessions(data || []);
+        const sorted = (data || []).sort(
+          (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) || b.id - a.id
+        );
+        setSessions(sorted);
       } catch (err) {
         console.error('Failed to load student dashboard sessions:', err);
         setError(err.message || 'Failed to load sessions.');

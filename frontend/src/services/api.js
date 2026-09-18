@@ -39,16 +39,24 @@ async function apiRequest(endpoint, options = {}) {
     }
 
     let errorMessage = 'Something went wrong';
+    let errorPayload = null;
     if (data && typeof data === 'object') {
       if (Array.isArray(data.detail)) {
         errorMessage = data.detail.map((err) => (typeof err === 'object' && err.msg ? err.msg : JSON.stringify(err))).join(', ');
       } else if (typeof data.detail === 'string') {
         errorMessage = data.detail;
+      } else if (data.detail && typeof data.detail === 'object') {
+        errorMessage = data.detail.message || JSON.stringify(data.detail);
+        errorPayload = data.detail;
       }
     } else if (typeof data === 'string' && data.trim()) {
       errorMessage = data;
     }
-    throw new Error(errorMessage);
+    const err = new Error(errorMessage);
+    if (errorPayload) {
+      err.payload = errorPayload;
+    }
+    throw err;
   }
 
   return data;

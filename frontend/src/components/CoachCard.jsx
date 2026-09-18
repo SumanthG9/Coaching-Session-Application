@@ -36,7 +36,7 @@ function CoachCard({ coach, onBook, onViewDetails }) {
           <div className="text-right shrink-0">
             <span className="text-xs text-slate-400 font-medium block">Rate</span>
             <span className="text-base font-extrabold text-slate-900">
-              ${parseFloat(coach.session_fee || 0).toFixed(0)}
+              ₹{parseFloat(coach.session_fee || 0).toLocaleString('en-IN')}
               <span className="text-xs font-medium text-slate-500">/hr</span>
             </span>
           </div>

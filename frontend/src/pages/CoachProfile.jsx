@@ -10,7 +10,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import {
   Briefcase,
-  DollarSign,
+  IndianRupee,
   Calendar,
   Sparkles,
   Plus,
@@ -220,16 +220,16 @@ function CoachProfile() {
                   {/* Session Fee */}
                   <div>
                     <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                      Session Fee ($ USD)
+                      Session Fee (₹ INR)
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                        <DollarSign className="w-4 h-4" />
+                        <IndianRupee className="w-4 h-4" />
                       </div>
                       <input
                         type="number"
                         min={0}
-                        step="0.5"
+                        step="1"
                         required
                         value={sessionFee}
                         onChange={(e) => setSessionFee(e.target.value)}

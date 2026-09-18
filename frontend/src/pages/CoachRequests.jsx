@@ -48,7 +48,10 @@ function CoachRequests() {
     setError('');
     try {
       const data = await getCoachSessionRequests(token);
-      setSessions(data || []);
+      const sorted = (data || []).sort(
+        (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) || b.id - a.id
+      );
+      setSessions(sorted);
     } catch (err) {
       console.error('Failed to load coach requests:', err);
       setError(err.message || 'Failed to fetch session requests.');

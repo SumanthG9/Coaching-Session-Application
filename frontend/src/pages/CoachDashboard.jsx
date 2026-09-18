@@ -45,7 +45,10 @@ function CoachDashboard() {
         getCoachSessionRequests(token),
         getCoachSkills(token),
       ]);
-      setRequests(requestsData || []);
+      const sortedRequests = (requestsData || []).sort(
+        (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0) || b.id - a.id
+      );
+      setRequests(sortedRequests);
       setSkills(skillsData || []);
     } catch (err) {
       console.error('Failed to load coach dashboard:', err);

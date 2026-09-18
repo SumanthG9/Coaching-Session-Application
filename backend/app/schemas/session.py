@@ -31,6 +31,7 @@ class SessionResponse(BaseModel):
     topic: str
     student_message: str | None
     coach_remarks: str | None
+    meeting_link: str | None = None
     status: str
     created_at: datetime
     updated_at: datetime
@@ -41,3 +42,6 @@ class SessionResponse(BaseModel):
 
 class SessionComplete(BaseModel):
     coach_remarks: str | None = None
+
+class SessionMeetingLinkUpdate(BaseModel):
+    meeting_link: str | None = Field(default=None, max_length=500)

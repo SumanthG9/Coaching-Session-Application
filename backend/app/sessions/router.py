@@ -11,9 +11,13 @@ from app.models.user import User, UserRole
 from app.schemas.session import (
     SessionCreate,
     SessionComplete,
+    SessionMeetingLinkUpdate,
     SessionResponse,
 )
-from app.sessions.availability import is_time_within_availability
+from app.sessions.availability import (
+    find_nearest_available_slot,
+    is_time_within_availability,
+)
 
 
 router = APIRouter(
@@ -147,9 +151,44 @@ def create_session(
         )
 
         if requested_start < existing_end and session_end > existing_start:
+            # Query active sessions to find the nearest free slot
+            all_active_sessions = (
+                db.query(CoachingSession)
+                .filter(
+                    CoachingSession.coach_id == coach_profile.id,
+                    CoachingSession.session_date >= session_data.session_date,
+                    CoachingSession.status.in_(
+                        [
+                            SessionStatus.PENDING,
+                            SessionStatus.ACCEPTED,
+                        ]
+                    ),
+                )
+                .all()
+            )
+
+            nearest = find_nearest_available_slot(
+                availability_str=coach_profile.availability,
+                session_date=session_data.session_date,
+                requested_time=session_data.start_time,
+                duration_minutes=session_data.duration_minutes,
+                existing_sessions=all_active_sessions,
+            )
+
+            if nearest:
+                error_detail = {
+                    "message": f"Coach has another session. Nearest available slot: {nearest['display']}.",
+                    "nearest_slot": nearest,
+                }
+            else:
+                error_detail = {
+                    "message": "Coach has another session during this timeslot.",
+                    "nearest_slot": None,
+                }
+
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Coach is not available during this time",
+                detail=error_detail,
             )
 
     new_session = CoachingSession(
@@ -182,7 +221,7 @@ def get_my_sessions(
     return (
         db.query(CoachingSession)
         .filter(CoachingSession.student_id == student_profile.id)
-        .order_by(CoachingSession.session_date, CoachingSession.start_time)
+        .order_by(CoachingSession.created_at.desc(), CoachingSession.id.desc())
         .all()
     )
 
@@ -199,7 +238,7 @@ def get_coach_requests(
     return (
         db.query(CoachingSession)
         .filter(CoachingSession.coach_id == coach_profile.id)
-        .order_by(CoachingSession.session_date, CoachingSession.start_time)
+        .order_by(CoachingSession.created_at.desc(), CoachingSession.id.desc())
         .all()
     )
 
@@ -320,6 +359,28 @@ def complete_session(
 
     session.coach_remarks = session_data.coach_remarks
     session.status = SessionStatus.COMPLETED
+    db.commit()
+    db.refresh(session)
+    return session
+
+
+@router.put(
+    "/{session_id}/meeting-link",
+    response_model=SessionResponse,
+)
+def update_meeting_link(
+    session_id: int,
+    link_data: SessionMeetingLinkUpdate,
+    current_user: User = Depends(require_coach),
+    db: Session = Depends(get_db),
+):
+    coach_profile = _get_coach_profile(db, current_user.id)
+    session = _get_owned_session(db, session_id, coach_id=coach_profile.id)
+
+    if link_data.meeting_link and link_data.meeting_link.strip():
+        session.meeting_link = link_data.meeting_link.strip()
+    else:
+        session.meeting_link = None
     db.commit()
     db.refresh(session)
     return session
